@@ -51,9 +51,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             
             {/* Logo & Brand */}
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-solar-500 to-amber-300 flex items-center justify-center shadow-md shadow-amber-500/20 text-slate-950 shrink-0">
-                <Sun className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="Tejo Bharat Logo" 
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded-xl p-0.5 bg-white/10 shrink-0 border border-teal-500/30 shadow-md shadow-teal-900/30" 
+              />
               <div>
                 <div className="flex items-center space-x-1.5">
                   <span className="font-black text-sm sm:text-base tracking-tight text-white">

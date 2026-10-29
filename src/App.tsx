@@ -182,8 +182,8 @@ export function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4 space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-teal-800/60 border border-teal-600 flex items-center justify-center animate-pulse">
-          <Sun className="w-10 h-10 text-solar-400 animate-spin" />
+        <div className="w-20 h-20 rounded-3xl bg-slate-800/80 border border-teal-500/30 flex items-center justify-center p-3 shadow-2xl shadow-teal-900/50">
+          <img src="/logo.png" alt="Tejo Bharat" className="w-full h-full object-contain animate-pulse" />
         </div>
         <div className="text-center space-y-1">
           <h2 className="text-lg sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-amber-200">

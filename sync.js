@@ -15,6 +15,8 @@ const filesToSync = [
   'postcss.config.js',
   'tsconfig.json',
   'tsconfig.node.json',
+  'public/logo.png',
+  'public/logo.svg',
   'public/favicon.svg',
   'public/data/anakapalli.json',
   'src/main.tsx',
@@ -44,14 +46,13 @@ const filesToCleanup = [
   'src/assets/react.svg'
 ];
 
-function fetchWithHttps(url, maxRedirects = 5) {
-  // If global fetch exists (Node 18+ in Bolt), prefer it
+function fetchBinary(url, maxRedirects = 5) {
   if (typeof fetch === 'function') {
-    return fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
-      });
+    return fetch(url).then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    });
   }
 
   return new Promise((resolve, reject) => {
@@ -63,15 +64,14 @@ function fetchWithHttps(url, maxRedirects = 5) {
       }
     }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return fetchWithHttps(res.headers.location, maxRedirects - 1).then(resolve).catch(reject);
+        return fetchBinary(res.headers.location, maxRedirects - 1).then(resolve).catch(reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`HTTP ${res.statusCode}`));
       }
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data));
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
     });
     req.on('error', reject);
     req.setTimeout(25000, () => {
@@ -88,10 +88,10 @@ async function syncFile(file, index, total) {
 
   let content = null;
   try {
-    content = await fetchWithHttps(rawUrl);
+    content = await fetchBinary(rawUrl);
   } catch (e) {
     try {
-      content = await fetchWithHttps(cdnUrl);
+      content = await fetchBinary(cdnUrl);
     } catch (e2) {}
   }
 
@@ -105,7 +105,7 @@ async function syncFile(file, index, total) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  fs.writeFileSync(file, content, 'utf8');
+  fs.writeFileSync(file, content);
   console.log(`✅ [${index}/${total}] Updated ${file}`);
   return true;
 }
