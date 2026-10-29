@@ -51,7 +51,6 @@ export function App() {
         setVendors(loadedVendors);
         setDistricts(loadedDistricts);
         if (loadedDistricts.length > 0) {
-          // Default to first district if exists (Anakapalli)
           setSelectedDistrict(loadedDistricts[0].name);
         }
       } catch (err) {
@@ -84,10 +83,9 @@ export function App() {
     return districtVendors.filter(v => v.priority === 'HOT' || v.pipelineStage === 'INTERESTED').length;
   }, [districtVendors]);
 
-  // Power dialer queue: prioritizing uncalled and hot leads
+  // Power dialer queue
   const dialerQueue = useMemo(() => {
     const pool = [...districtVendors];
-    // Sort uncalled first, then hot leads
     pool.sort((a, b) => {
       if (a.pipelineStage === 'NEW' && b.pipelineStage !== 'NEW') return -1;
       if (b.pipelineStage === 'NEW' && a.pipelineStage !== 'NEW') return 1;
@@ -98,7 +96,7 @@ export function App() {
     return pool;
   }, [districtVendors]);
 
-  // Next and Previous navigation inside vendor modal
+  // Modal navigation
   const currentVendorIndex = useMemo(() => {
     if (!selectedVendorKey) return -1;
     return districtVendors.findIndex(v => v.uniqueKey === selectedVendorKey);
@@ -136,7 +134,7 @@ export function App() {
   ) => {
     const updated = await addVendorNote(vendorKey, noteData, vendors);
     setVendors(updated);
-    showToast('Call note logged successfully!');
+    showToast('Call note logged!');
   };
 
   const handleUpdateStage = async (vendorKey: string, newStage: PipelineStage) => {
@@ -146,8 +144,6 @@ export function App() {
   };
 
   const handleQuickCall = async (vendor: Vendor) => {
-    // When clicking the phone button directly in table:
-    // Automatically set status to CONTACTED if it was NEW
     if (vendor.pipelineStage === 'NEW') {
       const updated = await updateVendor(vendor.uniqueKey, { 
         pipelineStage: 'CONTACTED',
@@ -155,7 +151,6 @@ export function App() {
       }, vendors);
       setVendors(updated);
     }
-    // Also open the detail modal to immediately log notes from the call!
     setSelectedVendorKey(vendor.uniqueKey);
   };
 
@@ -181,22 +176,22 @@ export function App() {
     if (restoredDistricts.length > 0) {
       setSelectedDistrict(restoredDistricts[0].name);
     }
-    showToast('Database backup restored successfully!');
+    showToast('Backup restored successfully!');
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white space-y-4">
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4 space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-teal-800/60 border border-teal-600 flex items-center justify-center animate-pulse">
           <Sun className="w-10 h-10 text-solar-400 animate-spin" />
         </div>
         <div className="text-center space-y-1">
-          <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-amber-200">
+          <h2 className="text-lg sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-amber-200">
             TEJO BHARAT SOLAR CRM
           </h2>
           <p className="text-xs text-teal-300/80 flex items-center justify-center space-x-1.5">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Loading Anakapalli vendor database and call notes...</span>
+            <span>Loading Anakapalli vendor database...</span>
           </p>
         </div>
       </div>
@@ -204,17 +199,17 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       
-      {/* Toast Notification */}
+      {/* Toast Notification (Safe from mobile bottom nav bar) */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-teal-600 text-xs font-bold flex items-center space-x-2 animate-bounce">
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-teal-600 text-xs font-bold flex items-center space-x-2 animate-bounce">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Top Navigation */}
+      {/* Top App Bar & Mobile Bottom Navigation */}
       <Navbar
         districts={districts}
         selectedDistrict={selectedDistrict}
@@ -230,7 +225,7 @@ export function App() {
       />
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-5 flex-1 w-full">
         
         {/* KPI Metrics Dashboard */}
         <DashboardMetrics
@@ -268,9 +263,9 @@ export function App() {
 
       </main>
 
-      {/* MODALS */}
+      {/* MODALS & BOTTOM SHEETS */}
 
-      {/* 1. Vendor Detail & Notes Modal */}
+      {/* 1. Mobile Bottom Sheet / Detail Modal */}
       {selectedVendor && (
         <VendorDetailModal
           vendor={selectedVendor}
@@ -284,7 +279,7 @@ export function App() {
         />
       )}
 
-      {/* 2. Power Calling Session */}
+      {/* 2. Fullscreen Mobile Speed Dialer */}
       {isPowerDialerOpen && (
         <PowerDialerModal
           queue={dialerQueue}
@@ -293,7 +288,7 @@ export function App() {
         />
       )}
 
-      {/* 3. Import District JSON Modal */}
+      {/* 3. Import District Modal */}
       {isImportOpen && (
         <ImportDistrictModal
           districts={districts}
@@ -303,13 +298,13 @@ export function App() {
         />
       )}
 
-      {/* 4. Sales Pitch Cheat Sheet */}
+      {/* 4. Sales Pitch Drawer */}
       <SalesPitchDrawer
         isOpen={isPitchOpen}
         onClose={() => setIsPitchOpen(false)}
       />
 
-      {/* 5. Export / Backup / Bolt Sync Modal */}
+      {/* 5. Export / Backup Modal */}
       {isExportOpen && (
         <ExportBackupModal
           onClose={() => setIsExportOpen(false)}
@@ -319,8 +314,8 @@ export function App() {
         />
       )}
 
-      {/* Clean Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-4 text-center">
+      {/* Desktop Footer */}
+      <footer className="hidden lg:block bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-4 text-center">
         <p>
           Tejo Bharat Global Energy LLP • Rooftop Solar B2B CRM • 
           <span className="text-teal-400 ml-1 font-semibold">"Go Solar. Pay ₹0 for Electricity"</span>

@@ -5,12 +5,13 @@ import {
   Columns3, 
   ListFilter, 
   CalendarClock, 
-  Sparkles, 
   Upload, 
   Download, 
   BookOpen, 
   MapPin,
-  Flame
+  Flame,
+  Search,
+  Plus
 } from 'lucide-react';
 import { DistrictSummary } from '../types/vendor';
 
@@ -42,169 +43,199 @@ export const Navbar: React.FC<NavbarProps> = ({
   hotLeadsCount
 }) => {
   return (
-    <header className="sticky top-0 z-30 bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white shadow-lg border-b border-teal-800/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          
-          {/* Brand Logo & Title */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-solar-500 to-amber-300 flex items-center justify-center shadow-md shadow-amber-500/20 text-slate-950">
-              <Sun className="w-6 h-6 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-amber-200 to-solar-400">
-                  TEJO BHARAT
-                </span>
-                <span className="text-xs uppercase px-2 py-0.5 rounded-full bg-teal-800/60 text-teal-300 border border-teal-700 font-semibold tracking-wider">
-                  Solar B2B CRM
-                </span>
-              </div>
-              <p className="text-xs text-teal-300/80 hidden sm:block">
-                Vendor Outreach & Module Sales Platform
-              </p>
-            </div>
-          </div>
-
-          {/* District Selector */}
-          <div className="flex items-center space-x-2 bg-slate-800/80 border border-teal-700/50 rounded-lg px-2.5 py-1.5 shadow-inner">
-            <MapPin className="w-4 h-4 text-solar-400 shrink-0" />
-            <select
-              value={selectedDistrict}
-              onChange={(e) => onSelectDistrict(e.target.value)}
-              className="bg-transparent text-sm text-teal-100 font-medium focus:outline-none cursor-pointer pr-2"
-            >
-              <option value="all" className="bg-slate-900 text-white">All Districts ({districts.reduce((sum, d) => sum + d.totalVendors, 0)})</option>
-              {districts.map((d) => (
-                <option key={d.id} value={d.name} className="bg-slate-900 text-white">
-                  {d.name} ({d.totalVendors.toLocaleString()})
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={onOpenImport}
-              title="Add / Import More District Vendors JSON"
-              className="ml-1 text-xs bg-teal-700/60 hover:bg-teal-600 text-teal-200 hover:text-white px-2 py-0.5 rounded transition flex items-center space-x-1 border border-teal-600/40"
-            >
-              <Upload className="w-3 h-3" />
-              <span className="hidden md:inline">+ Add District</span>
-            </button>
-          </div>
-
-          {/* View Mode Nav */}
-          <div className="hidden lg:flex items-center space-x-1 bg-slate-950/60 p-1 rounded-xl border border-teal-900/60">
-            <button
-              onClick={() => setActiveView('list')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeView === 'list'
-                  ? 'bg-teal-600 text-white shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <ListFilter className="w-4 h-4" />
-              <span>Vendors Table</span>
-            </button>
-            <button
-              onClick={() => setActiveView('kanban')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeView === 'kanban'
-                  ? 'bg-teal-600 text-white shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <Columns3 className="w-4 h-4" />
-              <span>Sales Pipeline</span>
-            </button>
-            <button
-              onClick={() => setActiveView('followups')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition relative ${
-                activeView === 'followups'
-                  ? 'bg-teal-600 text-white shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <CalendarClock className="w-4 h-4" />
-              <span>Follow-ups</span>
-              {dueFollowUpCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[10px] font-bold">
-                  {dueFollowUpCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex items-center space-x-2">
+    <>
+      {/* 1. TOP APP BAR (Compact & Sticky for Mobile + Desktop) */}
+      <header className="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-teal-800/50 pt-safe">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             
-            {/* Speed Power Dialer */}
-            <button
-              onClick={onOpenPowerDialer}
-              className="flex items-center space-x-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-md shadow-emerald-900/30 transition transform hover:-translate-y-0.5 active:translate-y-0"
-              title="Start Rapid Calling Queue"
-            >
-              <PhoneCall className="w-4 h-4 animate-bounce" />
-              <span className="hidden sm:inline">Power Dialer</span>
-            </button>
+            {/* Logo & Brand */}
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-solar-500 to-amber-300 flex items-center justify-center shadow-md shadow-amber-500/20 text-slate-950 shrink-0">
+                <Sun className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="font-black text-sm sm:text-base tracking-tight text-white">
+                    TEJO BHARAT
+                  </span>
+                  <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-teal-800 text-teal-300 font-bold border border-teal-700">
+                    Solar CRM
+                  </span>
+                </div>
+                <p className="text-[10px] text-teal-300/80 hidden sm:block">
+                  Vendor Calling & Module Sales
+                </p>
+              </div>
+            </div>
 
-            {/* Sales Pitch Drawer */}
-            <button
-              onClick={onOpenPitch}
-              className="flex items-center space-x-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-medium px-2.5 py-2 rounded-lg transition"
-              title="View Telugu & English Pitch Scripts"
-            >
-              <BookOpen className="w-4 h-4 text-solar-400" />
-              <span className="hidden md:inline">Solar Pitch</span>
-            </button>
+            {/* District Selector Pill */}
+            <div className="flex items-center space-x-1 bg-slate-800/90 border border-teal-700/60 rounded-xl px-2 py-1 shadow-inner">
+              <MapPin className="w-3.5 h-3.5 text-solar-400 shrink-0" />
+              <select
+                value={selectedDistrict}
+                onChange={(e) => onSelectDistrict(e.target.value)}
+                className="bg-transparent text-xs text-teal-100 font-bold focus:outline-none cursor-pointer max-w-[110px] sm:max-w-none truncate"
+              >
+                <option value="all" className="bg-slate-900 text-white">All Districts</option>
+                {districts.map((d) => (
+                  <option key={d.id} value={d.name} className="bg-slate-900 text-white">
+                    {d.name} ({d.totalVendors})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={onOpenImport}
+                title="Add new district JSON"
+                className="p-1 text-teal-300 hover:text-white hover:bg-teal-700/60 rounded-lg transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-            {/* Export / Backup */}
-            <button
-              onClick={onOpenExport}
-              className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition"
-              title="Export CSV / JSON Backup"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            {/* Desktop Navigation Links (Hidden on Mobile) */}
+            <div className="hidden lg:flex items-center space-x-1 bg-slate-950/60 p-1 rounded-xl border border-teal-900/60">
+              <button
+                onClick={() => setActiveView('list')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  activeView === 'list' ? 'bg-teal-600 text-white' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <ListFilter className="w-4 h-4" />
+                <span>Vendor Cards</span>
+              </button>
+              <button
+                onClick={() => setActiveView('kanban')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  activeView === 'kanban' ? 'bg-teal-600 text-white' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Columns3 className="w-4 h-4" />
+                <span>Sales Pipeline</span>
+              </button>
+              <button
+                onClick={() => setActiveView('followups')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  activeView === 'followups' ? 'bg-teal-600 text-white' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <CalendarClock className="w-4 h-4" />
+                <span>Follow-ups</span>
+                {dueFollowUpCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[10px] font-bold">
+                    {dueFollowUpCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Quick Header Actions */}
+            <div className="flex items-center space-x-1.5">
+              
+              {/* Power Dialer CTA */}
+              <button
+                onClick={onOpenPowerDialer}
+                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-black px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md transition"
+                title="Start Speed Calling Queue"
+              >
+                <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
+                <span className="hidden xs:inline">Speed Call</span>
+              </button>
+
+              {/* Pitch Guide */}
+              <button
+                onClick={onOpenPitch}
+                className="p-1.5 sm:px-2.5 sm:py-2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition flex items-center space-x-1"
+                title="Telugu & English Pitch Scripts"
+              >
+                <BookOpen className="w-4 h-4 text-solar-400" />
+                <span className="hidden md:inline">Pitch</span>
+              </button>
+
+              {/* Export / Backup */}
+              <button
+                onClick={onOpenExport}
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition"
+                title="Export Excel / Backup"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
+
           </div>
-
         </div>
+      </header>
 
-        {/* Mobile View Toggle Bar */}
-        <div className="flex lg:hidden items-center justify-around py-2 border-t border-teal-800/30 text-xs">
-          <button
-            onClick={() => setActiveView('list')}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-md ${
-              activeView === 'list' ? 'bg-teal-700 text-white font-bold' : 'text-slate-300'
-            }`}
-          >
-            <ListFilter className="w-3.5 h-3.5" />
-            <span>Table</span>
-          </button>
-          <button
-            onClick={() => setActiveView('kanban')}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-md ${
-              activeView === 'kanban' ? 'bg-teal-700 text-white font-bold' : 'text-slate-300'
-            }`}
-          >
-            <Columns3 className="w-3.5 h-3.5" />
-            <span>Pipeline</span>
-          </button>
-          <button
-            onClick={() => setActiveView('followups')}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-md relative ${
-              activeView === 'followups' ? 'bg-teal-700 text-white font-bold' : 'text-slate-300'
-            }`}
-          >
-            <CalendarClock className="w-3.5 h-3.5" />
-            <span>Follow-ups</span>
+      {/* 2. MOBILE BOTTOM NAVIGATION DOCK (Thumb-First for Smartphones) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1 shadow-2xl flex items-center justify-around pb-safe">
+        
+        {/* Leads */}
+        <button
+          onClick={() => setActiveView('list')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center space-y-0.5 transition ${
+            activeView === 'list' ? 'text-teal-400 font-extrabold' : 'text-slate-400 font-medium'
+          }`}
+        >
+          <div className={`p-1 rounded-xl transition ${activeView === 'list' ? 'bg-teal-500/20' : ''}`}>
+            <ListFilter className="w-5 h-5" />
+          </div>
+          <span className="text-[10px]">Leads</span>
+        </button>
+
+        {/* Speed Dialer (Center Highlight) */}
+        <button
+          onClick={onOpenPowerDialer}
+          className="flex-1 py-1 flex flex-col items-center justify-center space-y-0.5 group"
+        >
+          <div className="w-10 h-10 -mt-5 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-900/50 group-active:scale-95 transition">
+            <PhoneCall className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] text-emerald-400 font-extrabold">Dialer</span>
+        </button>
+
+        {/* Follow-ups */}
+        <button
+          onClick={() => setActiveView('followups')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center space-y-0.5 transition relative ${
+            activeView === 'followups' ? 'text-teal-400 font-extrabold' : 'text-slate-400 font-medium'
+          }`}
+        >
+          <div className={`p-1 rounded-xl relative transition ${activeView === 'followups' ? 'bg-teal-500/20' : ''}`}>
+            <CalendarClock className="w-5 h-5" />
             {dueFollowUpCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[10px] font-bold">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
                 {dueFollowUpCount}
               </span>
             )}
-          </button>
-        </div>
+          </div>
+          <span className="text-[10px]">Reminders</span>
+        </button>
 
-      </div>
-    </header>
+        {/* Pipeline Kanban */}
+        <button
+          onClick={() => setActiveView('kanban')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center space-y-0.5 transition ${
+            activeView === 'kanban' ? 'text-teal-400 font-extrabold' : 'text-slate-400 font-medium'
+          }`}
+        >
+          <div className={`p-1 rounded-xl transition ${activeView === 'kanban' ? 'bg-teal-500/20' : ''}`}>
+            <Columns3 className="w-5 h-5" />
+          </div>
+          <span className="text-[10px]">Pipeline</span>
+        </button>
+
+        {/* Solar Pitch */}
+        <button
+          onClick={onOpenPitch}
+          className="flex-1 py-1 flex flex-col items-center justify-center space-y-0.5 text-solar-400 font-medium"
+        >
+          <div className="p-1 rounded-xl hover:bg-amber-500/10">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <span className="text-[10px]">Pitch</span>
+        </button>
+
+      </nav>
+    </>
   );
 };

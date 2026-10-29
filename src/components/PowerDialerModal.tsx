@@ -4,17 +4,15 @@ import {
   Phone, 
   PhoneForwarded, 
   MessageSquare, 
-  ChevronRight, 
-  ChevronLeft, 
   Copy, 
   Check, 
   Calendar, 
   Zap, 
   User, 
   MapPin, 
-  Flame, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  ChevronRight
 } from 'lucide-react';
 import { Vendor, PipelineStage, Priority, CallOutcome } from '../types/vendor';
 import { 
@@ -53,28 +51,26 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
   const [followUpDate, setFollowUpDate] = useState('');
   const [stage, setStage] = useState<PipelineStage>('CONTACTED');
   const [priority, setPriority] = useState<Priority>('NORMAL');
-  const [kwReq, setKwReq] = useState<number | undefined>(undefined);
-  const [quotedRate, setQuotedRate] = useState<number | undefined>(undefined);
   const [showPitch, setShowPitch] = useState(false);
 
   const currentVendor = queue[currentIndex];
 
   if (!currentVendor) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-md w-full text-center space-y-4 shadow-2xl">
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-xl">
+      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-3xl">
             🎉
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Calling Queue Completed!</h3>
+          <h3 className="text-xl font-black text-slate-900">Calling Queue Done!</h3>
           <p className="text-xs text-slate-500">
-            You have gone through all vendors in the current calling queue. Excellent sales outreach session!
+            You called all leads in the current calling queue.
           </p>
           <button
             onClick={onClose}
-            className="w-full bg-teal-700 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-teal-600 transition"
+            className="w-full bg-teal-700 text-white font-extrabold py-3 rounded-2xl text-xs"
           >
-            Return to Dashboard
+            Back to Dashboard
           </button>
         </div>
       </div>
@@ -100,25 +96,20 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
       stageChange: stage,
       priorityChange: priority,
       solarRequirement: {
-        estimatedMonthlyKW: kwReq ? Number(kwReq) : undefined,
-        quotedPricePerWatt: quotedRate ? Number(quotedRate) : undefined,
         preferredPanelType: 'DCR Mono PERC 550W'
       }
     });
 
-    // Reset local state for next vendor
     setNoteText('');
     setFollowUpDate('');
     setOutcome('ANSWERED');
     setStage('CONTACTED');
     setPriority('NORMAL');
-    setKwReq(undefined);
-    setQuotedRate(undefined);
 
     if (currentIndex < queue.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      setCurrentIndex(queue.length); // trigger complete
+      setCurrentIndex(queue.length);
     }
   };
 
@@ -129,138 +120,114 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
-      <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[95vh]">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex flex-col justify-end sm:justify-center items-center sm:p-4 animate-fadeIn">
+      
+      {/* Mobile Full Screen / Desktop Modal */}
+      <div className="bg-white w-full sm:max-w-2xl h-[94vh] sm:h-auto sm:max-h-[92vh] rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-slideUp">
         
-        {/* Dialer Header Bar */}
-        <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-              <PhoneForwarded className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-sm text-teal-300 uppercase tracking-wider">
-                  Power Calling Session
-                </span>
-                <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">
-                  {currentIndex + 1} of {queue.length}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400">
-                District: <b>{currentVendor.district}</b>
-              </p>
-            </div>
+        {/* Mobile Top Header */}
+        <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div className="flex items-center space-x-2">
+            <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-lg">
+              Lead {currentIndex + 1} of {queue.length}
+            </span>
+            <span className="text-xs text-teal-300 font-bold">
+              {currentVendor.district}
+            </span>
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowPitch(!showPitch)}
-              className="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg font-semibold flex items-center space-x-1"
+              className="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-xl font-bold flex items-center space-x-1"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{showPitch ? 'Hide Pitch' : 'Show Pitch'}</span>
+              <span>{showPitch ? 'Hide Pitch' : 'Pitch'}</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800"
+              className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-800"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-slate-800 h-1">
+        {/* Progress bar */}
+        <div className="w-full bg-slate-800 h-1 shrink-0">
           <div
             className="bg-emerald-500 h-1 transition-all duration-300"
             style={{ width: `${Math.round(((currentIndex + 1) / queue.length) * 100)}%` }}
           />
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 text-xs">
           
-          {/* Pitch Quick View if toggled */}
+          {/* Quick Pitch Banner if open */}
           {showPitch && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900 space-y-1.5">
-              <span className="font-bold uppercase text-[10px] tracking-wider text-amber-700">Quick Telugu Pitch:</span>
-              <p className="text-xs leading-relaxed">
-                "నమస్కారం సార్! నా పేరు దుర్గ, తేజో భారత్ గ్లోబల్ ఎనర్జీ నుండి మాట్లాడుతున్నాను. మీ సోలార్ ఇన్స్టాలేషన్స్ కోసం Tier-1 DCR & Non-DCR Mono PERC/TOPCon 550W+ ప్యానెల్స్ హోల్‌సేల్ డీలర్ ప్రైస్‌కే రెడీ స్టాక్ ఇస్తున్నాము. మీ కరెంట్ రిక్వైర్మెంట్ ఏమైనా ఉందా సార్?"
-              </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-amber-900 text-xs leading-relaxed">
+              <b>Telugu Pitch:</b> "నమస్కారం సార్! నా పేరు దుర్గ, తేజో భారత్ గ్లోబల్ ఎనర్జీ నుండి మాట్లాడుతున్నాను. మీ సోలార్ ఇన్స్టాలేషన్స్ కోసం Tier-1 DCR & Non-DCR Mono PERC/TOPCon 550W+ ప్యానెల్స్ హోల్‌సేల్ డీలర్ ప్రైస్‌కే రెడీ స్టాక్ ఇస్తున్నాము. మీ కరెంట్ రిక్వైర్మెంట్ ఏమైనా ఉందా సార్?"
             </div>
           )}
 
           {/* Current Vendor Identity Card */}
-          <div className="bg-gradient-to-br from-teal-50/80 via-slate-50 to-white border border-teal-200/80 rounded-2xl p-4 sm:p-5 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="bg-gradient-to-br from-teal-50 via-slate-50 to-white border border-teal-200 rounded-2xl p-4 space-y-2.5">
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
                   {currentVendor.vendorName}
                 </h2>
-                <div className="flex items-center space-x-2 text-slate-600 font-semibold mt-0.5">
-                  <User className="w-3.5 h-3.5 text-teal-600" />
-                  <span>{currentVendor.contactPersonName || 'No Contact Person'}</span>
-                  <span>•</span>
-                  <span className="text-teal-700 font-bold">{currentVendor.district}</span>
+                <div className="text-xs text-slate-600 font-bold flex items-center space-x-1 mt-0.5">
+                  <User className="w-3.5 h-3.5 text-teal-700" />
+                  <span>{currentVendor.contactPersonName || 'No Contact Listed'}</span>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="bg-white border border-teal-200 px-2.5 py-1 rounded-lg text-teal-800 font-bold flex items-center space-x-1">
-                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span>{currentVendor.nationwiseInstallationAndCapacity?.installedCapacity ?? 0} kW Base</span>
-                </span>
-              </div>
+              <span className="bg-white border border-teal-200 px-2 py-0.5 rounded-lg text-teal-800 font-black text-[11px] shrink-0">
+                ⚡ {currentVendor.nationwiseInstallationAndCapacity?.installedCapacity ?? 0} kW Base
+              </span>
             </div>
 
             {currentVendor.address && (
-              <p className="text-[11px] text-slate-500 flex items-center space-x-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{currentVendor.address}</span>
-              </p>
+              <p className="text-[11px] text-slate-500 truncate">{currentVendor.address}</p>
             )}
 
-            {/* CALL BUTTONS */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              
-              {/* Click to Call */}
+            {/* CALL ACTION BUTTONS (HUGE THUMB TARGETS) */}
+            <div className="flex items-center gap-2 pt-1">
               <a
                 href={telLink}
-                className="flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm sm:text-base px-5 py-2.5 rounded-xl shadow-md transition transform active:scale-95"
+                className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 active:scale-95 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-700/25 transition"
               >
                 <Phone className="w-4 h-4 fill-white animate-bounce" />
-                <span>Call {formatPhoneDisplay(currentVendor.contactPersonMobile)}</span>
+                <span className="text-sm font-mono tracking-tight">
+                  Call {formatPhoneDisplay(currentVendor.contactPersonMobile)}
+                </span>
               </a>
 
               <button
                 onClick={handleCopyPhone}
-                className="p-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 text-slate-600"
-                title="Copy phone"
+                className="w-12 h-12 flex items-center justify-center bg-white border border-slate-300 rounded-2xl text-slate-600 active:scale-95 transition shrink-0"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                {copied ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5" />}
               </button>
 
               <a
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-1.5 bg-green-600 hover:bg-green-500 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs"
+                className="w-12 h-12 flex items-center justify-center bg-green-600 text-white rounded-2xl shadow-sm active:scale-95 transition shrink-0"
               >
-                <MessageSquare className="w-4 h-4 fill-white" />
-                <span>WhatsApp Pitch</span>
+                <MessageSquare className="w-5 h-5 fill-white" />
               </a>
-
             </div>
           </div>
 
-          {/* Quick Call Logging Form */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-            
-            {/* Outcome Selection */}
+          {/* Quick Outcome Logger */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Call Outcome:</label>
-              <div className="flex flex-wrap gap-1.5">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1.5">Call Outcome:</label>
+              <div className="grid grid-cols-3 gap-1.5">
                 {(['ANSWERED', 'BUSY', 'NO_ANSWER', 'SWITCHED_OFF', 'CALLBACK_REQUESTED', 'WRONG_NUMBER'] as CallOutcome[]).map((oc) => (
                   <button
                     key={oc}
@@ -270,10 +237,10 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
                       if (oc === 'ANSWERED') setStage('CONTACTED');
                       if (oc === 'BUSY' || oc === 'CALLBACK_REQUESTED') setStage('FOLLOW_UP');
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                    className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition ${
                       outcome === oc
-                        ? 'bg-teal-700 text-white border-teal-800 font-bold shadow-sm'
-                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                        ? 'bg-teal-700 text-white border-teal-800 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200'
                     }`}
                   >
                     {getCallOutcomeBadge(oc).label}
@@ -283,49 +250,45 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
             </div>
 
             {/* Stage & Priority */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Set Stage:</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Set Stage:</label>
                 <select
                   value={stage}
                   onChange={(e) => setStage(e.target.value as PipelineStage)}
-                  className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2"
+                  className="w-full bg-white border border-slate-300 rounded-xl p-2 font-bold"
                 >
                   <option value="CONTACTED">Contacted</option>
-                  <option value="INTERESTED">Interested in Panels 🔥</option>
-                  <option value="QUOTE_SENT">Price / Quote Sent</option>
+                  <option value="INTERESTED">Interested 🔥</option>
+                  <option value="QUOTE_SENT">Quote Sent</option>
                   <option value="FOLLOW_UP">Follow-up</option>
                   <option value="WON">Deal Won 🎉</option>
-                  <option value="LOST">Not Interested / Lost</option>
+                  <option value="LOST">Lost</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Priority:</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Priority:</label>
                 <div className="flex gap-1">
                   {(['NORMAL', 'WARM', 'HOT'] as Priority[]).map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setPriority(p)}
-                      className={`flex-1 py-2 text-xs font-bold rounded-lg border transition ${
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl border ${
                         priority === p
-                          ? p === 'HOT'
-                            ? 'bg-rose-600 text-white border-rose-700'
-                            : p === 'WARM'
-                            ? 'bg-amber-500 text-white border-amber-600'
-                            : 'bg-slate-800 text-white'
+                          ? p === 'HOT' ? 'bg-rose-600 text-white' : p === 'WARM' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-white'
                           : 'bg-white text-slate-700 border-slate-200'
                       }`}
                     >
-                      {p === 'HOT' ? '🔥 Hot' : p === 'WARM' ? '☀️ Warm' : 'Normal'}
+                      {p === 'HOT' ? '🔥' : p === 'WARM' ? '☀️' : 'Normal'}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Quick Note Presets */}
+            {/* Quick note presets */}
             <div>
               <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quick Note:</span>
               <div className="flex flex-wrap gap-1">
@@ -334,7 +297,7 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setNoteText(prev => prev ? `${prev}. ${note}` : note)}
-                    className="text-[10px] bg-white border border-slate-200 hover:border-teal-400 px-2 py-0.5 rounded text-slate-600"
+                    className="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded-lg text-slate-600"
                   >
                     + {note}
                   </button>
@@ -342,25 +305,23 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
               </div>
             </div>
 
-            {/* Note text & Follow-up date */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <textarea
-                  rows={2}
-                  placeholder="Notes from the call..."
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500"
-                />
-              </div>
+            {/* Note text + Follow-up date */}
+            <div className="space-y-2">
+              <textarea
+                rows={2}
+                placeholder="Call notes..."
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Follow-up Date:</label>
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Follow-up:</span>
                 <input
                   type="date"
                   value={followUpDate}
                   onChange={(e) => setFollowUpDate(e.target.value)}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg"
+                  className="bg-white border border-slate-300 rounded-xl p-1 text-xs"
                 />
               </div>
             </div>
@@ -369,18 +330,18 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
 
         </div>
 
-        {/* Footer Actions */}
-        <div className="bg-slate-100 p-4 border-t border-slate-200 flex items-center justify-between">
+        {/* STICKY BOTTOM ACTION (HUGE THUMB BUTTON) */}
+        <div className="bg-slate-100 p-3 sm:p-4 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0 pb-safe-modal">
           <button
             onClick={handleSkip}
-            className="text-xs text-slate-500 hover:text-slate-800 font-semibold px-3 py-2"
+            className="text-xs text-slate-500 font-bold px-3 py-2.5"
           >
-            Skip for now ⏩
+            Skip ⏩
           </button>
 
           <button
             onClick={handleSaveAndNext}
-            className="flex items-center space-x-2 bg-teal-700 hover:bg-teal-600 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-md transition transform active:scale-95"
+            className="flex-1 flex items-center justify-center space-x-2 bg-teal-700 active:bg-teal-800 text-white font-black text-sm py-3.5 rounded-2xl shadow-lg transition active:scale-95"
           >
             <span>Save & Next Lead</span>
             <ArrowRight className="w-4 h-4" />
