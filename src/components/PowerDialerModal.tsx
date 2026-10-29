@@ -12,7 +12,11 @@ import {
   MapPin, 
   Sparkles,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Mail,
+  Globe,
+  Tag,
+  Star
 } from 'lucide-react';
 import { Vendor, PipelineStage, Priority, CallOutcome } from '../types/vendor';
 import { 
@@ -189,9 +193,58 @@ export const PowerDialerModal: React.FC<PowerDialerModalProps> = ({
               </span>
             </div>
 
-            {currentVendor.address && (
-              <p className="text-[11px] text-slate-500 truncate">{currentVendor.address}</p>
-            )}
+            {/* Full Address */}
+            {currentVendor.address ? (
+              <div className="flex items-start space-x-1.5 text-xs text-slate-700 bg-white/80 p-2 rounded-xl border border-teal-100">
+                <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Address:</span>
+                  <p className="leading-relaxed font-medium">{currentVendor.address}</p>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Other Details Row */}
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-0.5">
+              {currentVendor.contactPersonEmail && (
+                <a
+                  href={`mailto:${currentVendor.contactPersonEmail}`}
+                  className="inline-flex items-center space-x-1 text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-teal-200"
+                >
+                  <Mail className="w-3 h-3 text-teal-600" />
+                  <span className="truncate max-w-[160px]">{currentVendor.contactPersonEmail}</span>
+                </a>
+              )}
+
+              {currentVendor.websiteUrl && (
+                <a
+                  href={currentVendor.websiteUrl.startsWith('http') ? currentVendor.websiteUrl : `https://${currentVendor.websiteUrl}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center space-x-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-blue-200"
+                >
+                  <Globe className="w-3 h-3 text-blue-500" />
+                  <span className="truncate max-w-[130px]">{currentVendor.websiteUrl.replace(/^https?:\/\//, '')}</span>
+                </a>
+              )}
+
+              {currentVendor.rating ? (
+                <span className="inline-flex items-center space-x-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  <span>{currentVendor.rating} ★ ({currentVendor.consumerRatingCount || 0})</span>
+                </span>
+              ) : null}
+
+              {currentVendor.vendorBrandsList && currentVendor.vendorBrandsList.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1">
+                  {currentVendor.vendorBrandsList.slice(0, 3).map((b, idx) => (
+                    <span key={idx} className="text-[10px] bg-slate-100 text-slate-700 font-semibold px-1.5 py-0.2 rounded border border-slate-200">
+                      {b.brandName}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* CALL ACTION BUTTONS (HUGE THUMB TARGETS) */}
             <div className="flex items-center gap-2 pt-1">

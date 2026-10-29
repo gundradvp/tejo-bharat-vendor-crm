@@ -146,9 +146,24 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               {vendor.vendorName}
             </h2>
 
-            <div className="text-xs text-teal-200/90 font-medium flex items-center space-x-1.5">
-              <User className="w-3.5 h-3.5 text-solar-400" />
-              <span className="font-bold text-white">{vendor.contactPersonName || 'No Contact Listed'}</span>
+            <div className="space-y-1 pt-0.5">
+              <div className="text-xs text-teal-200/90 font-medium flex items-center space-x-1.5">
+                <User className="w-3.5 h-3.5 text-solar-400 shrink-0" />
+                <span className="font-bold text-white">{vendor.contactPersonName || 'No Contact Listed'}</span>
+                {vendor.rating ? (
+                  <span className="text-amber-400 font-bold ml-1 flex items-center space-x-0.5">
+                    <Star className="w-3 h-3 fill-amber-400" />
+                    <span>{vendor.rating} ★</span>
+                  </span>
+                ) : null}
+              </div>
+
+              {vendor.address && (
+                <div className="text-[11px] text-slate-300 flex items-start space-x-1.5 leading-snug">
+                  <MapPin className="w-3.5 h-3.5 text-solar-400 shrink-0 mt-0.5" />
+                  <span>{vendor.address}</span>
+                </div>
+              )}
             </div>
           </div>
 
