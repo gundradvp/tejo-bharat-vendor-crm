@@ -1,9 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { execSync } = require('child_process');
 
-// Default repository details (Change if you pushed to a different repo name)
 const GITHUB_USER = 'gundradvp';
 const REPO_NAME = process.env.REPO_NAME || 'tejo-bharat-vendor-crm';
 const COMMIT_SHA = 'main';
@@ -38,7 +36,24 @@ const filesToSync = [
   'src/components/ExportBackupModal.tsx'
 ];
 
+// Clean up Bolt starter template files that shadow TypeScript files
+const filesToCleanup = [
+  'src/App.jsx',
+  'src/main.jsx',
+  'src/App.css',
+  'src/assets/react.svg'
+];
+
 function fetchWithHttps(url, maxRedirects = 5) {
+  // If global fetch exists (Node 18+ in Bolt), prefer it
+  if (typeof fetch === 'function') {
+    return fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      });
+  }
+
   return new Promise((resolve, reject) => {
     if (maxRedirects < 0) return reject(new Error('Too many redirects'));
     const req = https.get(url, {
@@ -59,7 +74,7 @@ function fetchWithHttps(url, maxRedirects = 5) {
       res.on('end', () => resolve(data));
     });
     req.on('error', reject);
-    req.setTimeout(20000, () => {
+    req.setTimeout(25000, () => {
       req.destroy();
       reject(new Error('Timeout'));
     });
@@ -96,24 +111,33 @@ async function syncFile(file, index, total) {
 }
 
 async function run() {
-  console.log(`🚀 Starting sync of Tejo Bharat Solar Vendor Calling CRM into Bolt (${GITHUB_USER}/${REPO_NAME})...`);
+  console.log(`\n🚀 Starting sync of Tejo Bharat Solar Vendor Calling CRM into Bolt...`);
+  console.log(`📥 Repository: ${GITHUB_USER}/${REPO_NAME} (${COMMIT_SHA})\n`);
+
+  // 1. Clean up default starter template files
+  for (const f of filesToCleanup) {
+    try {
+      if (fs.existsSync(f)) {
+        fs.unlinkSync(f);
+        console.log(`🧹 Removed default starter file: ${f}`);
+      }
+    } catch (e) {}
+  }
+
+  // 2. Sync all files
   let successCount = 0;
   for (let i = 0; i < filesToSync.length; i++) {
     const ok = await syncFile(filesToSync[i], i + 1, filesToSync.length);
     if (ok) successCount++;
   }
-  console.log(`\n🎉 DONE! ${successCount}/${filesToSync.length} files successfully updated inside Bolt!`);
 
-  // Ensure packages are installed
-  console.log('📦 Verifying npm packages in Bolt...');
-  try {
-    execSync('npm install --legacy-peer-deps', { stdio: 'inherit' });
-    console.log('✅ Dependencies verified and installed!');
-  } catch (e) {
-    console.warn('⚠️ Please run "npm install" manually if needed.');
-  }
-
-  console.log(`\n🌞 Solar Vendor CRM is Ready! Run 'npm run dev' to start preview.`);
+  console.log(`\n🎉 DONE! ${successCount}/${filesToSync.length} files successfully synced into Bolt!`);
+  console.log(`\n======================================================`);
+  console.log(`⚡ NEXT STEPS TO VIEW YOUR SOLAR CRM:`);
+  console.log(`1. Stop any running server: Press Ctrl + C`);
+  console.log(`2. Install dependencies:    npm install`);
+  console.log(`3. Start mobile CRM:        npm run dev`);
+  console.log(`======================================================\n`);
 }
 
 run();
