@@ -53,8 +53,7 @@ export const VendorList: React.FC<VendorListProps> = ({
   const [minCapacity, setMinCapacity] = useState<number>(0);
   const [onlyFollowUps, setOnlyFollowUps] = useState<boolean>(false);
   
-  const [sortBy, setSortBy] = useState<'capacity' | 'name' | 'lastContacted' | 'priority'>('capacity');
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [sortBy, setSortBy] = useState<'capacity-desc' | 'capacity-asc' | 'name' | 'lastContacted' | 'priority'>('capacity-desc');
 
   // Mobile layout mode: defaults to 'cards' for mobile-first friendliness
   const [viewLayout, setViewLayout] = useState<'cards' | 'table'>('cards');
@@ -103,7 +102,11 @@ export const VendorList: React.FC<VendorListProps> = ({
     const sorted = [...filteredVendors];
     sorted.sort((a, b) => {
       let comparison = 0;
-      if (sortBy === 'capacity') {
+      if (sortBy === 'capacity-desc') {
+        const capA = a.nationwiseInstallationAndCapacity?.installedCapacity || 0;
+        const capB = b.nationwiseInstallationAndCapacity?.installedCapacity || 0;
+        comparison = capB - capA;
+      } else if (sortBy === 'capacity-asc') {
         const capA = a.nationwiseInstallationAndCapacity?.installedCapacity || 0;
         const capB = b.nationwiseInstallationAndCapacity?.installedCapacity || 0;
         comparison = capA - capB;
@@ -112,15 +115,15 @@ export const VendorList: React.FC<VendorListProps> = ({
       } else if (sortBy === 'lastContacted') {
         const dateA = a.lastContactedAt ? new Date(a.lastContactedAt).getTime() : 0;
         const dateB = b.lastContactedAt ? new Date(b.lastContactedAt).getTime() : 0;
-        comparison = dateA - dateB;
+        comparison = dateB - dateA;
       } else if (sortBy === 'priority') {
         const score = (p: Priority) => (p === 'HOT' ? 3 : p === 'WARM' ? 2 : p === 'NORMAL' ? 1 : 0);
-        comparison = score(a.priority) - score(b.priority);
+        comparison = score(b.priority) - score(a.priority);
       }
-      return sortOrder === 'desc' ? -comparison : comparison;
+      return comparison;
     });
     return sorted;
-  }, [filteredVendors, sortBy, sortOrder]);
+  }, [filteredVendors, sortBy]);
 
   // Pagination
   const totalItems = sortedVendors.length;
@@ -219,6 +222,22 @@ export const VendorList: React.FC<VendorListProps> = ({
             <span>Follow-ups Today</span>
           </button>
 
+          {/* Lowest Installed kW chip (New!) */}
+          <button
+            onClick={() => {
+              setSortBy(prev => prev === 'capacity-asc' ? 'capacity-desc' : 'capacity-asc');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition shrink-0 flex items-center space-x-1 ${
+              sortBy === 'capacity-asc'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <span>📉 Lowest kW First</span>
+            {sortBy === 'capacity-asc' && <span className="text-[10px] bg-white/30 px-1 rounded">ON</span>}
+          </button>
+
           {/* High Capacity > 50kW */}
           <button
             onClick={() => {
@@ -277,13 +296,17 @@ export const VendorList: React.FC<VendorListProps> = ({
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sort By:</label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold text-xs"
+                onChange={(e) => {
+                  setSortBy(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold text-xs"
               >
-                <option value="capacity">Installed kW (Highest)</option>
-                <option value="lastContacted">Recent Calls</option>
-                <option value="priority">Priority (Hot first)</option>
-                <option value="name">Name (A-Z)</option>
+                <option value="capacity-asc">📉 Lowest Installed kW (0 kW first)</option>
+                <option value="capacity-desc">📈 Highest Installed kW (Major first)</option>
+                <option value="lastContacted">🕒 Recent Calls</option>
+                <option value="priority">🔥 Priority (Hot first)</option>
+                <option value="name">🔤 Name (A-Z)</option>
               </select>
             </div>
 
