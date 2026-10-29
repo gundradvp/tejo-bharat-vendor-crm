@@ -1,0 +1,334 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  initializeCRMData, 
+  updateVendor, 
+  addVendorNote, 
+  importNewDistrict, 
+  deleteDistrictFromDB 
+} from './services/storageService';
+import { Vendor, DistrictSummary, PipelineStage, Priority, CallOutcome } from './types/vendor';
+import { Navbar } from './components/Navbar';
+import { DashboardMetrics } from './components/DashboardMetrics';
+import { VendorList } from './components/VendorList';
+import { KanbanBoard } from './components/KanbanBoard';
+import { FollowUpQueue } from './components/FollowUpQueue';
+import { VendorDetailModal } from './components/VendorDetailModal';
+import { PowerDialerModal } from './components/PowerDialerModal';
+import { ImportDistrictModal } from './components/ImportDistrictModal';
+import { SalesPitchDrawer } from './components/SalesPitchDrawer';
+import { ExportBackupModal } from './components/ExportBackupModal';
+import { isFollowUpDueToday } from './utils/formatters';
+import { Sun, Loader2, CheckCircle2 } from 'lucide-react';
+
+export function App() {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [districts, setDistricts] = useState<DistrictSummary[]>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeView, setActiveView] = useState<'list' | 'kanban' | 'followups'>('list');
+
+  // Modals
+  const [selectedVendorKey, setSelectedVendorKey] = useState<string | null>(null);
+  const [isPowerDialerOpen, setIsPowerDialerOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isPitchOpen, setIsPitchOpen] = useState(false);
+
+  // Toast notification
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Initial Data Load
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const { vendors: loadedVendors, districts: loadedDistricts } = await initializeCRMData();
+        setVendors(loadedVendors);
+        setDistricts(loadedDistricts);
+        if (loadedDistricts.length > 0) {
+          // Default to first district if exists (Anakapalli)
+          setSelectedDistrict(loadedDistricts[0].name);
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // Filtered vendors for currently active district
+  const districtVendors = useMemo(() => {
+    if (selectedDistrict === 'all') return vendors;
+    return vendors.filter(v => v.district.toLowerCase() === selectedDistrict.toLowerCase());
+  }, [vendors, selectedDistrict]);
+
+  // Active selected vendor object
+  const selectedVendor = useMemo(() => {
+    if (!selectedVendorKey) return null;
+    return vendors.find(v => v.uniqueKey === selectedVendorKey) || null;
+  }, [vendors, selectedVendorKey]);
+
+  // Counts for Badges
+  const dueFollowUpCount = useMemo(() => {
+    return districtVendors.filter(v => isFollowUpDueToday(v.nextFollowUpDate)).length;
+  }, [districtVendors]);
+
+  const hotLeadsCount = useMemo(() => {
+    return districtVendors.filter(v => v.priority === 'HOT' || v.pipelineStage === 'INTERESTED').length;
+  }, [districtVendors]);
+
+  // Power dialer queue: prioritizing uncalled and hot leads
+  const dialerQueue = useMemo(() => {
+    const pool = [...districtVendors];
+    // Sort uncalled first, then hot leads
+    pool.sort((a, b) => {
+      if (a.pipelineStage === 'NEW' && b.pipelineStage !== 'NEW') return -1;
+      if (b.pipelineStage === 'NEW' && a.pipelineStage !== 'NEW') return 1;
+      if (a.priority === 'HOT' && b.priority !== 'HOT') return -1;
+      if (b.priority === 'HOT' && a.priority !== 'HOT') return 1;
+      return 0;
+    });
+    return pool;
+  }, [districtVendors]);
+
+  // Next and Previous navigation inside vendor modal
+  const currentVendorIndex = useMemo(() => {
+    if (!selectedVendorKey) return -1;
+    return districtVendors.findIndex(v => v.uniqueKey === selectedVendorKey);
+  }, [districtVendors, selectedVendorKey]);
+
+  const handleNextVendor = () => {
+    if (currentVendorIndex >= 0 && currentVendorIndex < districtVendors.length - 1) {
+      setSelectedVendorKey(districtVendors[currentVendorIndex + 1].uniqueKey);
+    }
+  };
+
+  const handlePrevVendor = () => {
+    if (currentVendorIndex > 0) {
+      setSelectedVendorKey(districtVendors[currentVendorIndex - 1].uniqueKey);
+    }
+  };
+
+  // Handlers
+  const handleUpdateVendor = async (vendorKey: string, updates: Partial<Vendor>) => {
+    const updated = await updateVendor(vendorKey, updates, vendors);
+    setVendors(updated);
+    showToast('Vendor updated');
+  };
+
+  const handleAddNote = async (
+    vendorKey: string, 
+    noteData: {
+      content: string;
+      callOutcome?: CallOutcome | string;
+      nextFollowUpDate?: string | null;
+      stageChange?: PipelineStage;
+      priorityChange?: Priority;
+      solarRequirement?: Vendor['solarRequirement'];
+    }
+  ) => {
+    const updated = await addVendorNote(vendorKey, noteData, vendors);
+    setVendors(updated);
+    showToast('Call note logged successfully!');
+  };
+
+  const handleUpdateStage = async (vendorKey: string, newStage: PipelineStage) => {
+    const updated = await updateVendor(vendorKey, { pipelineStage: newStage }, vendors);
+    setVendors(updated);
+    showToast(`Lead moved to ${newStage}`);
+  };
+
+  const handleQuickCall = async (vendor: Vendor) => {
+    // When clicking the phone button directly in table:
+    // Automatically set status to CONTACTED if it was NEW
+    if (vendor.pipelineStage === 'NEW') {
+      const updated = await updateVendor(vendor.uniqueKey, { 
+        pipelineStage: 'CONTACTED',
+        lastContactedAt: new Date().toISOString()
+      }, vendors);
+      setVendors(updated);
+    }
+    // Also open the detail modal to immediately log notes from the call!
+    setSelectedVendorKey(vendor.uniqueKey);
+  };
+
+  const handleImportDistrict = async (name: string, rawList: any[], fileName: string) => {
+    const result = await importNewDistrict(name, rawList, fileName, vendors, districts);
+    setVendors(result.updatedVendors);
+    setDistricts(result.updatedDistricts);
+    setSelectedDistrict(name);
+    showToast(`Imported ${result.addedCount} vendors for ${name}`);
+  };
+
+  const handleDeleteDistrict = async (name: string) => {
+    const result = await deleteDistrictFromDB(name, vendors, districts);
+    setVendors(result.updatedVendors);
+    setDistricts(result.updatedDistricts);
+    setSelectedDistrict('all');
+    showToast(`District ${name} removed`);
+  };
+
+  const handleDataRestored = (restoredVendors: Vendor[], restoredDistricts: DistrictSummary[]) => {
+    setVendors(restoredVendors);
+    setDistricts(restoredDistricts);
+    if (restoredDistricts.length > 0) {
+      setSelectedDistrict(restoredDistricts[0].name);
+    }
+    showToast('Database backup restored successfully!');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-teal-800/60 border border-teal-600 flex items-center justify-center animate-pulse">
+          <Sun className="w-10 h-10 text-solar-400 animate-spin" />
+        </div>
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-amber-200">
+            TEJO BHARAT SOLAR CRM
+          </h2>
+          <p className="text-xs text-teal-300/80 flex items-center justify-center space-x-1.5">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Loading Anakapalli vendor database and call notes...</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+      
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-teal-600 text-xs font-bold flex items-center space-x-2 animate-bounce">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Top Navigation */}
+      <Navbar
+        districts={districts}
+        selectedDistrict={selectedDistrict}
+        onSelectDistrict={setSelectedDistrict}
+        activeView={activeView}
+        setActiveView={setActiveView}
+        onOpenPowerDialer={() => setIsPowerDialerOpen(true)}
+        onOpenImport={() => setIsImportOpen(true)}
+        onOpenExport={() => setIsExportOpen(true)}
+        onOpenPitch={() => setIsPitchOpen(true)}
+        dueFollowUpCount={dueFollowUpCount}
+        hotLeadsCount={hotLeadsCount}
+      />
+
+      {/* Main Container */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 w-full">
+        
+        {/* KPI Metrics Dashboard */}
+        <DashboardMetrics
+          vendors={districtVendors}
+          districtName={selectedDistrict === 'all' ? 'All Districts' : selectedDistrict}
+        />
+
+        {/* Views */}
+        {activeView === 'list' && (
+          <VendorList
+            vendors={districtVendors}
+            selectedDistrict={selectedDistrict}
+            onSelectVendor={(v) => setSelectedVendorKey(v.uniqueKey)}
+            onQuickCall={handleQuickCall}
+            onUpdateStage={handleUpdateStage}
+          />
+        )}
+
+        {activeView === 'kanban' && (
+          <KanbanBoard
+            vendors={districtVendors}
+            selectedDistrict={selectedDistrict}
+            onSelectVendor={(v) => setSelectedVendorKey(v.uniqueKey)}
+            onUpdateStage={handleUpdateStage}
+          />
+        )}
+
+        {activeView === 'followups' && (
+          <FollowUpQueue
+            vendors={districtVendors}
+            onSelectVendor={(v) => setSelectedVendorKey(v.uniqueKey)}
+            onQuickCall={handleQuickCall}
+          />
+        )}
+
+      </main>
+
+      {/* MODALS */}
+
+      {/* 1. Vendor Detail & Notes Modal */}
+      {selectedVendor && (
+        <VendorDetailModal
+          vendor={selectedVendor}
+          onClose={() => setSelectedVendorKey(null)}
+          onUpdateVendor={handleUpdateVendor}
+          onAddNote={handleAddNote}
+          onNextVendor={handleNextVendor}
+          onPrevVendor={handlePrevVendor}
+          hasNext={currentVendorIndex < districtVendors.length - 1}
+          hasPrev={currentVendorIndex > 0}
+        />
+      )}
+
+      {/* 2. Power Calling Session */}
+      {isPowerDialerOpen && (
+        <PowerDialerModal
+          queue={dialerQueue}
+          onClose={() => setIsPowerDialerOpen(false)}
+          onAddNoteAndAdvance={handleAddNote}
+        />
+      )}
+
+      {/* 3. Import District JSON Modal */}
+      {isImportOpen && (
+        <ImportDistrictModal
+          districts={districts}
+          onClose={() => setIsImportOpen(false)}
+          onImportDistrict={handleImportDistrict}
+          onDeleteDistrict={handleDeleteDistrict}
+        />
+      )}
+
+      {/* 4. Sales Pitch Cheat Sheet */}
+      <SalesPitchDrawer
+        isOpen={isPitchOpen}
+        onClose={() => setIsPitchOpen(false)}
+      />
+
+      {/* 5. Export / Backup / Bolt Sync Modal */}
+      {isExportOpen && (
+        <ExportBackupModal
+          onClose={() => setIsExportOpen(false)}
+          vendors={vendors}
+          districts={districts}
+          onDataRestored={handleDataRestored}
+        />
+      )}
+
+      {/* Clean Footer */}
+      <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-4 text-center">
+        <p>
+          Tejo Bharat Global Energy LLP • Rooftop Solar B2B CRM • 
+          <span className="text-teal-400 ml-1 font-semibold">"Go Solar. Pay ₹0 for Electricity"</span>
+        </p>
+      </footer>
+
+    </div>
+  );
+}
+
+export default App;
