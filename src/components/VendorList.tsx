@@ -20,7 +20,8 @@ import {
   ChevronDown,
   Mail,
   Globe,
-  Tag
+  Tag,
+  RotateCcw
 } from 'lucide-react';
 import { Vendor, PipelineStage, Priority, FilterState } from '../types/vendor';
 import { 
@@ -42,6 +43,14 @@ interface VendorListProps {
   onUpdateStage: (vendorKey: string, newStage: PipelineStage) => void;
 }
 
+export type SortOption = 
+  | 'capacity-desc' 
+  | 'capacity-asc' 
+  | 'capacity-asc-gt0' 
+  | 'name' 
+  | 'lastContacted' 
+  | 'priority';
+
 export const VendorList: React.FC<VendorListProps> = ({
   vendors,
   selectedDistrict,
@@ -56,7 +65,7 @@ export const VendorList: React.FC<VendorListProps> = ({
   const [minCapacity, setMinCapacity] = useState<number>(0);
   const [onlyFollowUps, setOnlyFollowUps] = useState<boolean>(false);
   
-  const [sortBy, setSortBy] = useState<'capacity-desc' | 'capacity-asc' | 'name' | 'lastContacted' | 'priority'>('capacity-desc');
+  const [sortBy, setSortBy] = useState<SortOption>('capacity-desc');
 
   // Mobile layout mode: defaults to 'cards' for mobile-first friendliness
   const [viewLayout, setViewLayout] = useState<'cards' | 'table'>('cards');
@@ -94,11 +103,14 @@ export const VendorList: React.FC<VendorListProps> = ({
       const cap = v.nationwiseInstallationAndCapacity?.installedCapacity || 0;
       if (minCapacity > 0 && cap < minCapacity) return false;
 
+      // Filter out zero / missing kW leads when sorting lowest kW starting from >0 kW
+      if (sortBy === 'capacity-asc-gt0' && cap <= 0) return false;
+
       if (onlyFollowUps && !isFollowUpDueToday(v.nextFollowUpDate)) return false;
 
       return true;
     });
-  }, [vendors, selectedDistrict, searchQuery, stageFilter, priorityFilter, callStatusFilter, minCapacity, onlyFollowUps]);
+  }, [vendors, selectedDistrict, searchQuery, stageFilter, priorityFilter, callStatusFilter, minCapacity, onlyFollowUps, sortBy]);
 
   // Sorting
   const sortedVendors = useMemo(() => {
@@ -109,7 +121,7 @@ export const VendorList: React.FC<VendorListProps> = ({
         const capA = a.nationwiseInstallationAndCapacity?.installedCapacity || 0;
         const capB = b.nationwiseInstallationAndCapacity?.installedCapacity || 0;
         comparison = capB - capA;
-      } else if (sortBy === 'capacity-asc') {
+      } else if (sortBy === 'capacity-asc' || sortBy === 'capacity-asc-gt0') {
         const capA = a.nationwiseInstallationAndCapacity?.installedCapacity || 0;
         const capB = b.nationwiseInstallationAndCapacity?.installedCapacity || 0;
         comparison = capA - capB;
@@ -128,6 +140,19 @@ export const VendorList: React.FC<VendorListProps> = ({
     return sorted;
   }, [filteredVendors, sortBy]);
 
+  // Check if any filter or non-default sort is active
+  const isFiltered = useMemo(() => {
+    return (
+      searchQuery.trim() !== '' ||
+      stageFilter !== 'all' ||
+      priorityFilter !== 'all' ||
+      callStatusFilter !== 'all' ||
+      minCapacity > 0 ||
+      onlyFollowUps ||
+      sortBy !== 'capacity-desc'
+    );
+  }, [searchQuery, stageFilter, priorityFilter, callStatusFilter, minCapacity, onlyFollowUps, sortBy]);
+
   // Pagination
   const totalItems = sortedVendors.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
@@ -143,6 +168,7 @@ export const VendorList: React.FC<VendorListProps> = ({
     setMinCapacity(0);
     setOnlyFollowUps(false);
     setSearchQuery('');
+    setSortBy('capacity-desc');
     setCurrentPage(1);
   };
 
@@ -178,6 +204,18 @@ export const VendorList: React.FC<VendorListProps> = ({
         {/* Quick Horizontal Filter Scroll (Thumb-Friendly on Phones) */}
         <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1 text-xs">
           
+          {/* Reset Filters chip - visible when any filter or custom sort is applied */}
+          {isFiltered && (
+            <button
+              onClick={handleFilterReset}
+              title="Reset all filters and sorting"
+              className="px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition shrink-0 flex items-center space-x-1 bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100 shadow-sm animate-in fade-in"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Filters</span>
+            </button>
+          )}
+
           {/* Uncalled Only chip */}
           <button
             onClick={() => {
@@ -225,7 +263,23 @@ export const VendorList: React.FC<VendorListProps> = ({
             <span>Follow-ups Today</span>
           </button>
 
-          {/* Lowest Installed kW chip (New!) */}
+          {/* Lowest Installed kW chip (>0 kW only) */}
+          <button
+            onClick={() => {
+              setSortBy(prev => prev === 'capacity-asc-gt0' ? 'capacity-desc' : 'capacity-asc-gt0');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition shrink-0 flex items-center space-x-1 ${
+              sortBy === 'capacity-asc-gt0'
+                ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-400'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <span>📉 Lowest kW (&gt;0 kW)</span>
+            {sortBy === 'capacity-asc-gt0' && <span className="text-[10px] bg-white/30 px-1 rounded">ON</span>}
+          </button>
+
+          {/* Lowest Installed kW chip (All, incl. 0 kW) */}
           <button
             onClick={() => {
               setSortBy(prev => prev === 'capacity-asc' ? 'capacity-desc' : 'capacity-asc');
@@ -233,11 +287,11 @@ export const VendorList: React.FC<VendorListProps> = ({
             }}
             className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition shrink-0 flex items-center space-x-1 ${
               sortBy === 'capacity-asc'
-                ? 'bg-amber-600 text-white shadow-sm'
+                ? 'bg-amber-700 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            <span>📉 Lowest kW First</span>
+            <span>📉 Lowest kW (incl. 0)</span>
             {sortBy === 'capacity-asc' && <span className="text-[10px] bg-white/30 px-1 rounded">ON</span>}
           </button>
 
@@ -271,9 +325,9 @@ export const VendorList: React.FC<VendorListProps> = ({
 
         </div>
 
-        {/* Collapsible Advanced Filters (Stage, Sort, View Toggle) */}
+        {/* Collapsible Advanced Filters (Stage, Min Capacity, Sort, View Toggle, Reset) */}
         {showAdvancedFilters && (
-          <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Stage:</label>
               <select
@@ -296,6 +350,25 @@ export const VendorList: React.FC<VendorListProps> = ({
             </div>
 
             <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Min Capacity:</label>
+              <select
+                value={minCapacity}
+                onChange={(e) => {
+                  setMinCapacity(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold text-xs"
+              >
+                <option value={0}>All (incl. 0 kW)</option>
+                <option value={0.01}>At least &gt;0 kW</option>
+                <option value={10}>&gt;10 kW</option>
+                <option value={25}>&gt;25 kW</option>
+                <option value={50}>&gt;50 kW (Major)</option>
+                <option value={100}>&gt;100 kW</option>
+              </select>
+            </div>
+
+            <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sort By:</label>
               <select
                 value={sortBy}
@@ -305,7 +378,8 @@ export const VendorList: React.FC<VendorListProps> = ({
                 }}
                 className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold text-xs"
               >
-                <option value="capacity-asc">📉 Lowest Installed kW (0 kW first)</option>
+                <option value="capacity-asc-gt0">📉 Lowest Installed kW (&gt;0 kW only)</option>
+                <option value="capacity-asc">📉 Lowest Installed kW (incl. 0 kW)</option>
                 <option value="capacity-desc">📈 Highest Installed kW (Major first)</option>
                 <option value="lastContacted">🕒 Recent Calls</option>
                 <option value="priority">🔥 Priority (Hot first)</option>
@@ -343,9 +417,10 @@ export const VendorList: React.FC<VendorListProps> = ({
               <button
                 type="button"
                 onClick={handleFilterReset}
-                className="w-full text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 p-2 rounded-lg transition"
+                className="w-full text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 p-2 rounded-lg transition flex items-center justify-center space-x-1"
               >
-                Reset All Filters
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset All Filters</span>
               </button>
             </div>
           </div>
@@ -355,10 +430,21 @@ export const VendorList: React.FC<VendorListProps> = ({
 
       {/* Results Header Count */}
       <div className="flex items-center justify-between px-2 text-xs text-slate-500">
-        <span className="font-semibold">
-          <b>{totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1}</b>-
-          <b>{Math.min(currentPage * pageSize, totalItems)}</b> of <b>{totalItems.toLocaleString()}</b> leads
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className="font-semibold">
+            <b>{totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1}</b>-
+            <b>{Math.min(currentPage * pageSize, totalItems)}</b> of <b>{totalItems.toLocaleString()}</b> leads
+          </span>
+          {isFiltered && (
+            <button
+              onClick={handleFilterReset}
+              className="text-[11px] text-rose-600 hover:text-rose-800 font-bold underline flex items-center space-x-1 ml-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset filters</span>
+            </button>
+          )}
+        </div>
 
         <div className="flex items-center space-x-1">
           <span className="hidden sm:inline">Per page:</span>
