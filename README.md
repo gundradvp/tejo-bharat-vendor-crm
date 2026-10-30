@@ -71,7 +71,7 @@ This app is 100% compatible with Bolt.new:
 ### Option B: Bolt Terminal Sync One-Liner
 Inside Bolt's terminal, you can run:
 ```bash
-node -e 'fetch("https://raw.githubusercontent.com/gundradvp/tejo-bharat-crm/main/sync.js?"+Date.now()).then(r=>r.text()).then(eval)'
+node -e 'fetch("https://raw.githubusercontent.com/gundradvp/tejo-bharat-vendor-crm/main/sync.js?"+Date.now()).then(r=>r.text()).then(eval)'
 ```
 
 ---
